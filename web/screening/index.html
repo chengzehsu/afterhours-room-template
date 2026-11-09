@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="zh-Hant-TW" class="js intro-running">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>看劇的地方</title>
+<meta name="description" content="從聽歌的地方隔壁那扇門走進來：我家客廳的投影、片櫃，和我這幾年看了什麼的時間軸。">
+<meta name="theme-color" content="#1a120d">
+<link rel="stylesheet" href="../src/design/tokens.css">
+<link rel="stylesheet" href="../src/design/components.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* 放映室：朋友拿著票來我家看電影。
+   注意：vite 建置後這段樣式會排在 components.css 前面，覆寫元件時一律寫成 .btn.xxx／.seg .xxx 提高權重。色票、字級、間距沿用播放室（web/src/styles.css、tokens.css）。 */
+@font-face { font-family: 'Switzer'; src: url('/fonts/switzer-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Switzer'; src: url('/fonts/switzer-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Switzer'; src: url('/fonts/switzer-600.woff2') format('woff2'); font-weight: 600 700; font-display: swap; }
+:root {
+  --soot: #1a120d; --walnut: #3b2416; --bulb: #f3c47f; --glow: #ffd9a0; --cream: #f4e6cd;
+  --door: #93311f; --kraft: #e6d7ba; --sheet: #efe8da; --paper-ink: #2a1c13;
+  --paper-ink-2: rgba(42, 28, 19, 0.66); --paper-ink-3: rgba(42, 28, 19, 0.22);
+  --ease-cam: cubic-bezier(0.65, 0, 0.2, 1);
+  --gutter-x: clamp(16px, 4vw, 56px);
+  --lit-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 28px rgba(20, 12, 8, 0.8);
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+  --stub-w: 128px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html.intro-running, html.locked { overflow: hidden; }
+body { margin: 0; background: var(--soot); color: var(--cream); font-family: var(--font); font-size: var(--step-body); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: clip; }
+h1, h2, h3, p, dl, dd, ol { margin: 0; }
+ol { padding: 0; list-style: none; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; }
+
+/* 任何元素都不能把手機版面撐寬：一撐寬手機就整頁縮小，銀幕看起來被切掉、歪一邊（2026-11-09 Aside 量到版面被撐到 792 寬） */
+html, body { overflow-x: clip; }
+.stage { position: fixed; inset: 0; z-index: 0; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
+.stage::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 45%, transparent 50%, rgba(20, 12, 8, 0.5) 100%), linear-gradient(to top, rgba(20, 12, 8, 0.7), transparent 40%); } /* 3D 畫面的暗角與文字暗部，同播放室 */
+.no-room .stage { display: none; }
+main { position: relative; z-index: 1; pointer-events: none; }
+main .copy, main .hand, main button, main a { pointer-events: auto; }
+
+.bar { position: fixed; inset: 0 0 auto; z-index: 20; display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  padding: 18px var(--gutter-x); font-size: var(--step-small); pointer-events: none; background: linear-gradient(to bottom, rgba(20, 12, 8, 0.6), transparent); }
+/* 頂列底色：跟播放室一樣由上往下淡出，內文捲上來時不會壓在站名上 */
+.bar::before { content: ''; position: absolute; inset: 0 0 -28px; z-index: -1; pointer-events: none;
+  background: linear-gradient(to bottom, var(--scrim-strong) 0%, var(--scrim-strong) 55%, transparent 100%); }
+.bar a { pointer-events: auto; text-decoration: none; color: inherit; }
+.bar__home { font-weight: 500; }
+.bar__back { margin-left: auto; padding: 6px 10px; color: rgba(244, 230, 205, 0.75); }
+.bar__back:hover { color: var(--cream); }
+.where ol { display: flex; gap: 4px; }
+.where a { display: flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 99px; color: rgba(244, 230, 205, 0.6); transition: color 0.3s; }
+.where a::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.5; transition: opacity 0.4s, background-color 0.4s, box-shadow 0.4s; }
+.where a[aria-current='true'] { color: var(--cream); }
+.where a[aria-current='true']::before { background: var(--bulb); opacity: 1; box-shadow: 0 0 0 3px rgba(243, 196, 127, 0.18), 0 0 12px 2px rgba(243, 196, 127, 0.7); }
+
+.scene { position: relative; min-height: 100svh; padding: clamp(88px, 12vh, 140px) var(--gutter-x) clamp(56px, 9vh, 110px); display: flex; align-items: flex-end; }
+.scene--pass { min-height: 70svh; }
+.scene--tall { min-height: 140svh; align-items: center; }
+.scene--timeline { min-height: 640svh; align-items: flex-start; }
+.copy--sticky { position: sticky; top: calc(100svh - 300px); }
+.cam-mark { position: absolute; left: 0; right: 0; bottom: 0; height: 100svh; pointer-events: none; }
+.copy { max-width: 760px; min-width: 0; /* 彈性項目預設最小寬度＝內容寬，海報條會把整段撐到 760 */ text-shadow: var(--lit-shadow); transition: opacity 0.3s ease; }
+.kicker { font-size: var(--step-small); color: rgba(244, 230, 205, 0.7); margin-bottom: var(--space-3); }
+.title--sm { font-size: var(--step-head) !important; line-height: 1.05 !important;; text-wrap: balance; }
+.title { font-weight: 600; font-size: var(--step-display); line-height: 0.92; letter-spacing: -0.04em; margin-bottom: var(--space-5); }
+.lead { font-size: var(--step-lead); line-height: 1.5; color: rgba(244, 230, 205, 0.92); max-width: 34em; }
+.hint { margin-top: var(--space-4); font-size: var(--step-small); color: rgba(244, 230, 205, 0.65); }
+.row-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+[data-share][hidden] { display: none; }
+.share-note { flex-basis: 100%; margin: 0; min-height: 1.4em; font-size: var(--step-small); color: rgba(244, 230, 205, 0.78); }
+
+.btn.btn--bulb { background: var(--bulb); color: var(--paper-ink); border-radius: 4px; padding: 0 22px 0 18px;
+  box-shadow: 0 0 0 1px rgba(255, 217, 160, 0.6) inset, 0 10px 34px -6px rgba(243, 170, 80, 0.55); }
+.btn.btn--bulb::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--paper-ink); opacity: 0.8; }
+.btn.btn--bulb:disabled { opacity: 0.55; cursor: progress; }
+.btn--quiet { min-height: var(--control-h-sm); padding: 0 var(--space-4); border: 0; background: none; color: rgba(244, 230, 205, 0.78); cursor: pointer; text-decoration: underline; text-underline-offset: 4px; font-size: var(--step-small); }
+.btn.btn--plain { background: rgba(26, 18, 13, 0.72); color: var(--cream); border-radius: 4px; }
+@media (hover: hover) and (pointer: fine) {
+  .btn.btn--bulb:not(:disabled):hover { background: var(--glow); color: var(--paper-ink); }
+  .btn--quiet:hover { color: var(--cream); }
+  .btn.btn--plain:hover { background: var(--cream); color: var(--soot); }
+}
+.seg .seg__opt { background: rgba(26, 18, 13, 0.72); color: var(--cream); }
+.seg .seg__opt[aria-checked='true'] { background: var(--cream); color: var(--soot); }
+.ranges { margin-top: var(--space-5); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* 搜尋片櫃：控制項照 design system（44px 高、方角、用色階分層不用線） */
+.search { margin-top: var(--space-4); max-width: 440px; }
+.search__input { width: 100%; min-height: var(--control-h-sm); padding: 0 var(--space-4); border: 0; border-radius: var(--radius); background: rgba(26, 18, 13, 0.78); color: var(--cream); font: inherit; font-size: var(--step-body); }
+.search__input::placeholder { color: rgba(244, 230, 205, 0.55); }
+.search__input:focus-visible { outline: var(--focus); outline-offset: 2px; }
+.search__list { margin-top: 2px; display: grid; gap: 2px; }
+.search__list button { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); width: 100%; min-height: var(--control-h-sm); padding: var(--space-2) var(--space-4); border: 0; border-radius: var(--radius); background: rgba(26, 18, 13, 0.78); color: var(--cream); text-align: left; cursor: pointer; text-shadow: none; }
+.search__list button:focus-visible { outline: var(--focus); outline-offset: 2px; }
+.search__name { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search__meta { flex: none; font-size: var(--step-small); color: rgba(244, 230, 205, 0.62); }
+.search__empty { padding: var(--space-2) var(--space-4); font-size: var(--step-small); color: rgba(244, 230, 205, 0.7); }
+@media (hover: hover) and (pointer: fine) {
+  .search__list button:hover { background: var(--cream); color: var(--soot); }
+  .search__list button:hover .search__meta { color: rgba(26, 18, 13, 0.7); }
+}
+
+/* 門口與票 */
+.scene--door { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); align-items: end; gap: var(--space-7); }
+.hand { display: grid; justify-items: end; gap: var(--space-5); }
+.door-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: flex-end; align-items: center; }
+.loading { font-size: var(--step-small); color: rgba(244, 230, 205, 0.7); }
+.after-tear { display: none; }
+.torn .door-actions, .torn .before-tear { display: none; }
+.torn .after-tear { display: block; }
+.ticket { display: flex; width: min(560px, 100%); color: var(--paper-ink); transform: rotate(-2.5deg); transform-origin: 70% 80%; }
+.ticket__body, .ticket__stub { background: var(--kraft) var(--paper-grain); position: relative; }
+.ticket__body { flex: 1; min-width: 0; padding: var(--space-5) var(--space-5) var(--space-5) var(--space-6);
+  -webkit-mask: radial-gradient(circle 11px at 100% 0, #0000 98%, #000) top / 100% 51% no-repeat, radial-gradient(circle 11px at 100% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+          mask: radial-gradient(circle 11px at 100% 0, #0000 98%, #000) top / 100% 51% no-repeat, radial-gradient(circle 11px at 100% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat; }
+.ticket__stub { width: var(--stub-w); flex: none; padding: var(--space-5) var(--space-4); display: grid; align-content: space-between; gap: var(--space-4); border-left: 2px dashed var(--paper-ink-3);
+  -webkit-mask: radial-gradient(circle 11px at 0 0, #0000 98%, #000) top / 100% 51% no-repeat, radial-gradient(circle 11px at 0 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+          mask: radial-gradient(circle 11px at 0 0, #0000 98%, #000) top / 100% 51% no-repeat, radial-gradient(circle 11px at 0 100%, #0000 98%, #000) bottom / 100% 51% no-repeat; }
+.ticket__house { font-size: var(--step-small); color: var(--paper-ink-2); }
+.ticket__title { font-size: var(--step-head); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; margin: var(--space-1) 0 var(--space-4); }
+.ticket__rows { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-4); }
+.ticket__rows dt { font-size: var(--step-small); color: var(--paper-ink-2); padding-top: 2px; }
+.ticket__rows dd { font-weight: 500; }
+.stub__head { font-size: var(--step-small); color: var(--paper-ink-2); }
+.stub__seat { font-weight: 600; font-size: var(--step-lead); line-height: 1.2; }
+.holes { display: flex; gap: 6px; }
+.holes li { width: 13px; height: 13px; border-radius: 50%; border: 1.5px dashed var(--paper-ink-3); transition: background-color 0.25s, border-color 0.25s, transform 0.25s var(--ease-out); }
+.holes li.punched { background: var(--soot); border: 1.5px solid var(--soot); }
+.holes li.punching { transform: scale(0.55); }
+.stub__stops { font-size: var(--step-small); color: var(--paper-ink-2); }
+.ticket.tug .ticket__stub { transform: translate(14px, 4px) rotate(5deg); transition: transform 0.22s var(--ease-out); }
+.ticket.tearing .ticket__body { transform: translate(-36px, 70px) rotate(-7deg); opacity: 0; transition: transform 0.75s var(--ease-cam), opacity 0.6s 0.15s ease; }
+.stub-dock { position: fixed; right: var(--gutter-x); bottom: 20px; z-index: 15; transform: rotate(3deg); }
+.stub-dock .ticket__stub { --stub-w: 116px; padding: var(--space-4) var(--space-3); gap: var(--space-3); border-left: 0; -webkit-mask: none; mask: none;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 92%, 4px 88%, 0 84%, 0 76%, 5px 72%, 0 68%, 0 58%, 3px 54%, 0 50%, 0 40%, 5px 36%, 0 32%, 0 22%, 4px 18%, 0 14%); }
+.stub-dock .stub__seat { font-size: var(--step-body); }
+.in-hand .stub-dock { opacity: 0; pointer-events: none; }
+/* 拿著一部在看：片櫃左欄（說明、時段、搜尋）先淡出，桌機抽出來的那部在畫面中間偏左，會壓到說明與搜尋框；放回去就回來 */
+#shelf .copy { transition: opacity 0.3s ease; }
+.in-hand #shelf .copy { opacity: 0; }
+.in-hand #shelf .copy, .in-hand #shelf .copy * { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { #shelf .copy { transition: none; } }
+.stub-dock { transition: opacity 0.3s ease; }
+.has-film .search { display: none; }
+main .copy.gone, main .copy.gone * { pointer-events: none; }  /* 淡掉的字不能還點得到 */  /* 選好片就不再出現；按「換一部」回來才有 */
+/* 3D 打不開時的 HTML 版放映室 */
+.fallback { position: relative; z-index: 30; max-width: 1200px; margin: 0 auto; padding: clamp(88px, 12vh, 140px) var(--gutter-x) var(--space-9); }
+.fallback .lead { margin-top: var(--space-3); }
+.fallback__head { margin: var(--space-8) 0 var(--space-5); font-size: var(--step-lead); font-weight: 600; }
+.fallback__wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr)); gap: var(--space-5) var(--gutter); }
+/* img 帶 width/height 屬性（防版面跳動），height 要設 auto，aspect-ratio 才會生效，不然每張都被撐成 513px 高 */
+.fallback__wall img { display: block; width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; background: var(--surface); }
+.fallback__wall b { display: block; margin-top: var(--space-2); font-size: var(--step-small); font-weight: 500; line-height: 1.35; }
+.fallback__wall span { font-size: var(--step-small); color: rgba(244, 230, 205, 0.62); }
+.fallback__years { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.fallback__years li { background: var(--surface); padding: var(--space-3) var(--space-4); font-size: var(--step-small); }
+.fallback__years b { display: block; font-size: var(--step-lead); font-weight: 600; letter-spacing: -0.02em; }
+html.fallback-on .stage, html.fallback-on main, html.fallback-on .stub-dock, html.fallback-on .where, html.fallback-on .panel, html.fallback-on .tip { display: none; }
+html.fallback-on { overflow: auto; }
+/* 從播放室換頁過來：先是暗場，房間準備好再淡入 */
+.fade { position: fixed; inset: 0; z-index: 50; background: var(--soot); display: grid; place-items: center; transition: opacity 0.9s ease; }
+.fade p { font-size: var(--step-small); color: rgba(244, 230, 205, 0.6); }
+.fade.out { opacity: 0; pointer-events: none; }
+.fade p { transition: opacity 0.2s ease; }
+.fade.out p { opacity: 0; }  /* 暗場淡出時，「整理中… 100%」先收掉，不跟入場券疊在一起 */
+
+/* 片櫃：滑過去的片名、拿在手上的說明 */
+.tip { position: fixed; z-index: 25; pointer-events: none; background: var(--kraft) var(--paper-grain); color: var(--paper-ink); padding: 8px 12px; font-size: var(--step-small); line-height: 1.4; max-width: 260px; transform: translate(14px, -50%) rotate(-1deg); opacity: 0; transition: opacity 0.15s; }
+.tip.on { opacity: 1; }
+.tip b { display: block; font-size: var(--step-body); font-weight: 600; }
+.panel { position: fixed; z-index: 22; right: var(--gutter-x); top: 50%; width: min(400px, calc(100vw - 2 * var(--gutter-x))); transform: translateY(-50%); text-shadow: var(--lit-shadow);
+  opacity: 0; pointer-events: none; transition: opacity 0.35s ease; }
+.panel.on { opacity: 1; pointer-events: auto; }
+.panel h3 { font-size: var(--step-head); font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: var(--space-3); }
+.panel .meta { font-size: var(--step-small); color: rgba(244, 230, 205, 0.7); margin-bottom: var(--space-4); }
+.panel .say { font-size: var(--step-lead); line-height: 1.5; }
+/* 劇情簡介：第三方文字（TMDB），不改寫、不用業主口吻；預設收成 4 行（手機 3 行），按「展開」看全文（長的在面板內捲動） */
+.synopsis { margin-top: var(--space-4); }
+.synopsis[hidden], .synopsis__more[hidden] { display: none; }
+.synopsis__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.synopsis__src { font-size: var(--step-small); color: rgba(244, 230, 205, 0.6); }
+.synopsis__text { font-size: var(--step-small); line-height: 1.55; color: rgba(244, 230, 205, 0.88); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
+.synopsis.open .synopsis__text { display: block; -webkit-line-clamp: unset; line-clamp: unset; max-height: 32svh; overflow-y: auto; overscroll-behavior: contain; pointer-events: auto; }
+.synopsis__more { min-height: var(--control-h-sm); margin: -13px 0; padding: 0 0 0 var(--space-4); }  /* 點擊範圍 44px，但不撐高標題列（面板高度有上限） */
+.panel .drag { margin-top: var(--space-4); font-size: var(--step-small); color: rgba(244, 230, 205, 0.6); }
+.panel .row-actions { margin-top: var(--space-5); }
+.btn.skip-film { position: fixed; z-index: 22; left: 50%; transform: translateX(-50%); bottom: 24px; display: none; }
+.playing-seq .btn.skip-film { display: inline-flex; }
+
+/* 銀幕預告：開聲音、暫停，暫停或播完才出現「到 Netflix 看完整版」 */
+.trailer-ctl { position: fixed; z-index: 22; left: 50%; transform: translateX(-50%); bottom: 24px; display: none; gap: var(--space-3); flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100vw - 2 * var(--gutter-x)); }
+.trailer-ctl.on { display: flex; }
+/* 桌機：左欄的字捲過按鈕那一帶時按鈕先讓開（main.js 的 copyUnder），看不見就不能點 */
+.trailer-ctl { transition: opacity 0.2s ease; }
+.trailer-ctl.yield { opacity: 0; }
+.trailer-ctl.yield, .trailer-ctl.yield * { pointer-events: none; }
+/* 桌機坐到沙發：字停好時底部要讓出預告按鈕（底 24px＋高 48px）再留一點縫，不然按鈕一直讓位、按不到 */
+@media (min-width: 861px) { #sofa.scene { padding-bottom: max(clamp(56px, 9vh, 110px), calc(24px + var(--control-h) + var(--space-4))); } }
+.trailer-ctl .nf { display: none; }
+.trailer-ctl .nf.show { display: inline-flex; }
+@media (max-aspect-ratio: 9/10) { .trailer-ctl { bottom: auto; top: calc(25vh + 26vw + 10px); } } /* 手機：緊貼在銀幕下緣，下半留給字 */
+/* 手機：暫停後多一顆「到 Netflix 看完整版」，三顆要擠在一行，換行的話第二行會壓到下面沙發的字（375 寬量過） */
+@media (max-aspect-ratio: 9/10) {
+  .trailer-ctl { flex-wrap: nowrap; gap: 6px; }
+  .trailer-ctl .btn { min-height: 44px; padding: 0 12px; font-size: 15px; white-space: nowrap; }
+  .trailer-ctl .btn.btn--bulb { padding: 0 12px 0 10px; gap: 6px; }
+}
+
+.serve-hint { position: fixed; inset: auto var(--gutter-x) var(--space-5); z-index: 40; background: var(--bulb); color: var(--paper-ink); padding: var(--space-4); font-size: var(--step-small); max-width: 640px; }
+.serve-hint code { font-weight: 500; }
+
+/* 手機選片：書背太細點不準，片櫃底部給一排可以左右滑的海報，點一張就從書架抽出來（桌機用滑鼠指書背就好） */
+.strip { display: none; }
+/* 最愛：燈箱在右、字在左（桌機）；手機燈箱在上半，字貼底 */
+#favorites[hidden], [data-fav-nav][hidden] { display: none; }
+#favorites .copy { max-width: min(440px, 100%); }
+.fav-step--row { display: none; }
+.fav-list { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin-top: var(--space-4); font-size: var(--step-small); color: rgba(244, 230, 205, 0.8); }
+.fav-list li + li::before { content: '・'; margin-right: var(--space-3); color: rgba(243, 196, 127, 0.7); }
+.strip__item[data-fav] img { outline: 1.5px solid var(--bulb); outline-offset: 1px; }
+@media (max-width: 860px) {
+  .strip { display: flex; gap: var(--space-2); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin: var(--space-3) calc(var(--gutter-x) * -1) 0; padding: 0 var(--gutter-x) 2px; scroll-padding-left: var(--gutter-x); }
+  .strip::-webkit-scrollbar { display: none; }
+  .strip__item { all: unset; flex: 0 0 68px; scroll-snap-align: start; cursor: pointer; }
+  .strip__item img { display: block; width: 68px; height: 102px; object-fit: cover; border-radius: 2px; background: #2a1c13; box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.8); }
+  .strip__item:focus-visible img { outline: 2px solid var(--bulb); outline-offset: 2px; }
+  .strip__title { display: grid; place-items: center; width: 68px; height: 102px; padding: 4px; box-sizing: border-box; background: #2a1c13; color: var(--cream); font-size: var(--step-small); line-height: 1.3; text-align: center; overflow: hidden; }
+  .scene--door { grid-template-columns: minmax(0, 1fr); align-content: end; gap: var(--space-6); }
+  .hand { justify-items: start; }
+  .door-actions { justify-content: flex-start; }
+  .ticket { transform: rotate(-1.5deg); --stub-w: 104px; }
+  .ticket__body { padding: var(--space-4) var(--space-4) var(--space-4) var(--space-5); }
+  .where { display: none; }
+  .scene { padding-bottom: 170px; }
+  #favorites .title { margin-bottom: var(--space-3); }
+  .stub-dock { bottom: 12px; }
+  .stub-dock .ticket__stub { --stub-w: 92px; }
+  /* 手機拿在手上：片櫃的字先收掉，說明貼底、有底色，拿著的那部在上半 */
+  .in-hand main .copy { opacity: 0; }
+  .in-hand main .copy, .in-hand main .copy * { pointer-events: none; }
+  /* 抽過一次再回到片櫃（放回去、換一部）：說明收起來，只留時段、搜尋、我放我的貼在底部，書架整面露出來好再挑 */
+  .shelf-dock #shelf .copy { position: fixed; left: 0; right: 0; bottom: 0; max-width: none; z-index: 12;
+    padding: var(--space-7) var(--gutter-x) calc(var(--space-4) + env(safe-area-inset-bottom));
+    background: linear-gradient(to bottom, transparent, var(--scrim-strong) var(--space-7)); }
+  .shelf-dock #shelf .copy :is(.kicker, .title, .lead, .hint) { display: none; }
+  .shelf-dock #shelf .copy .search { display: none; } /* 手機有海報條可以滑，挑片模式不放搜尋框，底部這條才不會吃掉半個畫面 */
+  .shelf-dock #shelf .copy .row-actions { margin-top: var(--space-3); }
+  .panel { top: auto; bottom: 0; left: 0; right: 0; width: auto; transform: none;
+    padding: var(--space-7) var(--gutter-x) calc(var(--space-5) + env(safe-area-inset-bottom));
+    background: linear-gradient(to bottom, transparent, var(--scrim-strong) var(--space-7)); }
+  /* 時間軸：銀幕在上半，字在下半；票根先收起來，不壓在字上 */
+  /* 時間軸：手機只留小標、當月說明與註記，放到銀幕下面，不壓在銀幕的長條上；大標一進來就讀過了 */
+  .copy--sticky { top: calc(100svh - 230px); }
+  .scene--timeline .copy--sticky .title { display: none; }
+  /* 手機寬度不夠：進門後的票根小卡不留在畫面上，不然每一段都會壓到字（打孔照樣記，只是不顯示） */
+  .stub-dock { display: none; }
+  /* 沙發：票根讓開，字往下貼，銀幕上面整面露出來 */
+  #sofa.scene { padding-bottom: var(--space-7); }
+  .panel h3 { font-size: var(--step-lead); }
+  .panel .say { font-size: var(--step-body); }
+  .synopsis { margin-top: var(--space-3); }
+  /* 預覽面板（含簡介）在 375×667 要 ≤ 畫面 52%，不蓋到手上那片 DVD：上方漸層縮短、提示與按鈕列的間距收緊（mobile-audit.mjs 的 PANEL 規則會量） */
+  .panel { padding-top: var(--space-5); }
+  .panel .drag { margin-top: var(--space-2); }
+  .panel .row-actions { margin-top: var(--space-4); }
+  .synopsis__text { -webkit-line-clamp: 3; line-clamp: 3; }
+  .synopsis.open .synopsis__text { max-height: 22svh; }
+}
+/* 矮手機（375×667）：預覽面板含簡介要 ≤ 畫面 52%，轉動提示收掉（手指一拖就會轉，390×844 以上照常顯示） */
+@media (max-width: 860px) and (max-height: 719px) { .panel .drag { display: none; } }
+/* 手機直式（跟 main.js 的 isPhone 同一條件）：全景一格（字貼底）＋三格逐排推近（每格 80svh，字貼格底，排本身在畫面上方，不會被字蓋到） */
+@media (max-aspect-ratio: 9/10) {
+  #favorites.scene:not([hidden]) { display: block; padding: 0; }
+  #favorites .fav-step { max-width: none; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 var(--gutter-x); }
+  #favorites .fav-step[data-cam='favorites'] { min-height: 100svh; padding-top: clamp(88px, 12vh, 140px); padding-bottom: var(--space-6); }
+  #favorites .fav-step--row { display: flex; min-height: 80svh; padding-bottom: var(--space-5); }
+}
+/* 矮手機（例 375×667）：收掉最後一句提示，燈箱才放得大；片名清單照留，片名在這裡讀得到 */
+@media (max-width: 860px) and (max-height: 719px) {
+  #favorites .hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticket.tearing .ticket__body, .ticket.tug .ticket__stub, .holes li, .panel, .tip, .trailer-ctl { transition: none; }
+}
+</style>
+<script src="story.js"></script>
+</head>
+<body>
+<header class="bar">
+  <a class="bar__home" href="#door" data-fill="home"></a>
+  <a class="bar__back" href="../?from=screening#next" data-leave>回去聽歌</a>
+  <nav class="where" aria-label="房間裡的位置">
+    <ol>
+      <li><a href="#door" data-where="door">門口</a></li>
+      <li><a href="#hall" data-where="hall">客廳</a></li>
+      <li data-fav-nav hidden><a href="#favorites" data-where="favorites">最愛</a></li>
+      <li><a href="#shelf" data-where="shelf">片櫃</a></li>
+      <li><a href="#sofa" data-where="sofa">沙發</a></li>
+      <li><a href="#timeline" data-where="timeline">時間軸</a></li>
+    </ol>
+  </nav>
+</header>
+
+<div class="stage"><canvas id="room" aria-label="我家客廳的 3D 畫面"></canvas></div>
+
+<main>
+  <section id="door" class="scene scene--door" data-cam="door">
+    <div class="copy">
+      <p class="kicker">門口</p>
+      <h1 class="title">聽完歌，<br>換看劇。</h1>
+      <p class="lead before-tear">門開著，投影架好了。票在門口收，票根你留著，位子幫你留了。</p>
+      <p class="lead after-tear">票我收下了。進來吧，往下走。</p>
+    </div>
+    <div class="hand">
+      <div class="ticket" data-ticket>
+        <div class="ticket__body">
+          <p class="ticket__house" data-fill="house"></p>
+          <p class="ticket__title">入場券</p>
+          <dl class="ticket__rows">
+            <dt>場次</dt><dd data-fill="show"></dd>
+            <dt>座位</dt><dd>沙發靠窗那格</dd>
+            <dt>放什麼</dt><dd>進門你挑</dd>
+            <dt>片庫</dt><dd data-fill="library"></dd>
+          </dl>
+        </div>
+        <div class="ticket__stub" data-stub>
+          <p class="stub__head">入場 1 位</p>
+          <p class="stub__seat">沙發<br>靠窗</p>
+          <div>
+            <ol class="holes" aria-label="走過的地方"><li title="門口"></li><li title="客廳"></li><li title="沙發"></li><li title="時間軸"></li></ol>
+            <p class="stub__stops" data-stops>還沒進門</p>
+          </div>
+        </div>
+      </div>
+      <div class="door-actions">
+        <span class="loading" data-loading>客廳整理中…</span>
+        <button type="button" class="btn btn--bulb" data-tear disabled>撕下票根，進門</button>
+        <button type="button" class="btn--quiet" data-skip disabled>直接進門</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene scene--pass" data-cam="threshold" aria-hidden="true"></section>
+
+  <section id="hall" class="scene" data-cam="hall">
+    <div class="copy">
+      <p class="kicker">客廳</p>
+      <h2 class="title">先別坐，<br>挑一部。</h2>
+      <p class="lead" data-fill="hall"></p>
+    </div>
+  </section>
+
+
+
+  <section id="favorites" class="scene scene--fav" hidden>
+    <div class="copy fav-step" data-cam="favorites">
+      <p class="kicker">左牆</p>
+      <h2 class="title title--sm" data-fav-title></h2>
+      <p class="lead" data-fav-say></p>
+      <ol class="fav-list" data-fav-list aria-label="我最愛的作品"></ol>
+      <p class="hint" data-fav-hint></p>
+    </div>
+    <!-- 手機：鏡頭逐排推近，每排一段捲動距離；桌機不顯示（全景就夠）。
+         不放字：上面的清單已列片名、海報下面也有片名牌，再寫「第 N 排」加片名是重複（業主 2026-11-09） -->
+    <div class="fav-step fav-step--row" data-cam="favorites-r0" data-fav-row="0" aria-hidden="true"></div>
+    <div class="fav-step fav-step--row" data-cam="favorites-r1" data-fav-row="1" aria-hidden="true"></div>
+    <div class="fav-step fav-step--row" data-cam="favorites-r2" data-fav-row="2" aria-hidden="true"></div>
+  </section>
+
+  <section id="shelf" class="scene scene--tall" data-cam="shelf">
+    <div class="copy">
+      <p class="kicker">片櫃</p>
+      <h2 class="title title--sm">片櫃在這，<br>你挑一部。</h2>
+      <p class="lead" data-shelf-say></p>
+      <div class="seg ranges" role="radiogroup" aria-label="哪段時間看的">
+        <button type="button" role="radio" class="seg__opt" data-range="month" aria-checked="true">4 週</button>
+        <button type="button" role="radio" class="seg__opt" data-range="half" aria-checked="false">半年</button>
+        <button type="button" role="radio" class="seg__opt" data-range="year" aria-checked="false">一年</button>
+      </div>
+      <div class="strip" data-strip role="list" aria-label="左右滑，點一部抽出來"></div>
+      <div class="search">
+        <label class="sr-only" for="q">找片櫃上的片</label>
+        <input id="q" class="search__input" type="search" placeholder="打片名找找看，中文或原文都可以" autocomplete="off" enterkeyhint="search" data-q>
+        <ol class="search__list" data-results aria-live="polite"></ol>
+      </div>
+      <p class="hint" data-shelf-hint></p>
+      <div class="row-actions"><button type="button" class="btn btn--plain" data-host>不知道挑什麼？我放我的</button></div>
+    </div>
+  </section>
+
+  <section id="sofa" class="scene" data-cam="sofa">
+    <div class="copy">
+      <p class="kicker">沙發靠窗那格</p>
+      <h2 class="title title--sm" data-sofa-title></h2>
+      <p class="lead" data-sofa-say></p>
+      <div class="row-actions"><button type="button" class="btn btn--plain" data-again>換一部</button></div>
+    </div>
+  </section>
+
+  <section id="timeline" class="scene scene--timeline" data-cam="sofa" data-timeline>
+    <div class="copy copy--sticky">
+      <p class="kicker">時間軸</p>
+      <h2 class="title title--sm">邊看，<br>我跟你講這幾年。</h2>
+      <p class="lead" data-tl-say></p>
+      <p class="hint" data-tl-note></p>
+    </div>
+    <div class="cam-mark" data-cam="sofa" aria-hidden="true"></div>
+  </section>
+
+  <section id="bye" class="scene" data-cam="bye">
+    <div class="copy">
+      <p class="kicker">散場</p>
+      <h2 class="title title--sm">看完了，<br>燈幫你開回來。</h2>
+      <p class="lead" data-bye-say></p>
+      <div class="row-actions"><a class="btn btn--bulb" href="../?from=screening#next" data-leave>回去聽歌</a><button type="button" class="btn btn--plain" data-share hidden>分享看劇的地方</button><p class="share-note" data-share-note role="status"></p></div>
+      <p class="hint">海報與劇照來自 TMDB。本頁使用 TMDB API，但未經 TMDB 認可或授權。觀看紀錄來自我的 Netflix 匯出檔。</p>
+    </div>
+  </section>
+</main>
+
+<section class="fallback" data-fallback hidden aria-labelledby="fb-title">
+  <p class="kicker">看劇的地方</p>
+  <h1 class="title title--sm" id="fb-title">投影機今天<br>不太配合。</h1>
+  <p class="lead" data-fb-say></p>
+  <div class="row-actions">
+    <a class="btn btn--bulb" href="../?from=screening#next">回去聽歌</a>
+    <button type="button" class="btn btn--plain" data-fb-retry>再試一次</button>
+    <button type="button" class="btn btn--plain" data-share hidden>分享看劇的地方</button>
+    <p class="share-note" data-share-note role="status"></p>
+  </div>
+  <h2 class="fallback__head">片櫃上回來看最多天的</h2>
+  <ol class="fallback__wall" data-fb-wall></ol>
+  <h2 class="fallback__head">每年看了幾部</h2>
+  <ol class="fallback__years" data-fb-years></ol>
+  <p class="hint">海報與劇照來自 TMDB。本頁使用 TMDB API，但未經 TMDB 認可或授權。觀看紀錄來自我的 Netflix 匯出檔。</p>
+</section>
+<div class="stub-dock" data-dock aria-label="你的票根"></div>
+<div class="fade" data-fade aria-hidden="true"><p data-fade-say>客廳整理中…</p></div>
+<div class="tip" data-tip role="status"></div>
+<aside class="panel" data-panel aria-live="polite">
+  <p class="meta" data-p-meta></p>
+  <h3 data-p-title></h3>
+  <p class="say" data-p-say></p>
+  <div class="synopsis" data-p-syn hidden>
+    <div class="synopsis__head">
+      <p class="synopsis__src">簡介・TMDB</p>
+      <button type="button" class="btn--quiet synopsis__more" data-p-syn-more aria-expanded="false" hidden>展開</button>
+    </div>
+    <p class="synopsis__text" data-p-syn-text></p>
+  </div>
+  <p class="drag" data-p-drag></p>
+  <div class="row-actions">
+    <button type="button" class="btn btn--bulb" data-play>放這部</button>
+    <button type="button" class="btn btn--plain" data-flip>翻到背面</button>
+    <button type="button" class="btn--quiet" data-back>放回去</button>
+  </div>
+</aside>
+<button type="button" class="btn btn--plain skip-film" data-skip-seq>跳過，直接看</button>
+<div class="trailer-ctl" data-trailer-ctl>
+  <button type="button" class="btn btn--plain" data-tr-sound>開聲音</button>
+  <button type="button" class="btn btn--plain" data-tr-pause>暫停</button>
+  <a class="btn btn--bulb nf" data-tr-netflix href="https://www.netflix.com/" target="_blank" rel="noopener noreferrer">到 Netflix 看完整版</a>
+</div>
+
+<script>
+(() => {
+  const S = window.STORY;
+  const ym = (iso) => { const [y, m] = iso.split('-'); return `${y} 年 ${Number(m)} 月`; };
+  const today = new Date();
+  const fill = {
+    home: '看劇的地方',  // 頂列不放名字：門口與開場已經介紹過主人
+    house: '看劇的地方',
+    show: `${today.getMonth() + 1} 月 ${today.getDate()} 日・今晚`,
+    library: `${S.total.toLocaleString('zh-TW')} 部・${ym(S.since)}起`,
+    hall: `片庫有 ${S.total.toLocaleString('zh-TW')} 部，${ym(S.since)}開始一部一部看，最近在追的是《${S.now.title}》。右手邊那個片櫃放的是這一年看過的，還有我回來看最多次的那些，一共 ${S.shelf.length} 片。往下走，先去挑一部今晚要看的。`,
+  };
+  document.querySelectorAll('[data-fill]').forEach((el) => { el.textContent = fill[el.dataset.fill] ?? ''; });
+
+  // ---- 退路：WebGL 起不來、模組出錯、載入逾時 → HTML 版放映室 ----
+  const html = document.documentElement;
+  let fellBack = false;
+  window.__fallback = (reason) => {
+    if (fellBack || window.__step === 'running') return;
+    fellBack = true;
+    console.warn('放映室改用 HTML 版：', reason);
+    html.classList.add('fallback-on');
+    html.classList.remove('intro-running', 'locked');
+    document.querySelector('[data-fade]')?.classList.add('out');
+    const fb = document.querySelector('[data-fallback]');
+    fb.hidden = false;
+    fb.querySelector('[data-fb-say]').textContent = `3D 客廳開不起來，我把片櫃搬出來給你看。片庫有 ${S.total.toLocaleString('zh-TW')} 部，${ym(S.since)}開始看，最近在追的是《${S.now.title}》。`;
+    const wall = fb.querySelector('[data-fb-wall]');
+    [...S.shelf].sort((a, b) => b.days - a.days).slice(0, 24).forEach((it) => {
+      const li = document.createElement('li');
+      const img = document.createElement('img');
+      img.src = it.poster; img.alt = ''; img.loading = 'lazy'; img.width = 342; img.height = 513;
+      const b = document.createElement('b'); b.textContent = it.title;
+      const sp = document.createElement('span'); sp.textContent = `${it.kind}・回來看了 ${it.days} 天`;
+      li.append(img, b, sp);
+      wall.append(li);
+    });
+    const years = fb.querySelector('[data-fb-years]');
+    Object.entries(S.years).forEach(([y, v]) => {
+      const li = document.createElement('li');
+      const b = document.createElement('b'); b.textContent = `${v.works} 部`;
+      li.append(b, `${y} 年`);
+      years.append(li);
+    });
+    fb.querySelector('[data-fb-retry]').addEventListener('click', () => location.reload());
+  };
+  // 模組啟動中出錯（WebGL 建不起來、模型或貼圖載入失敗）
+  window.addEventListener('error', (e) => { if (window.__step !== 'running') window.__fallback(e.message || 'error'); });
+  window.addEventListener('unhandledrejection', (e) => { if (window.__step !== 'running') window.__fallback(String(e.reason?.message || e.reason)); });
+  // 驗收用：網址加 ?fallback=1 直接看 HTML 版
+  if (new URLSearchParams(location.search).has('fallback')) window.__fallback('forced');
+  // 20 秒還沒準備好就不等了
+  // 載得慢不算壞：20 秒都沒有新進度才改用 HTML 版（手機網路慢時，素材還在進來就不要放棄）
+  window.__lastProgress = performance.now();
+  const stall = setInterval(() => {
+    if (window.__step === 'running' || fellBack) return clearInterval(stall);
+    if (performance.now() - window.__lastProgress > 20000) { clearInterval(stall); window.__fallback('timeout'); }
+  }, 2000);
+  // 暗場只是換頁的過場：最多 1.2 秒就收，素材還沒載完也不擋字；進度改看門口按鈕旁那行
+  setTimeout(() => document.querySelector('[data-fade]')?.classList.add('out'), 1200);
+  // 沒有 WebGL 就不用等
+  try { const c = document.createElement('canvas'); if (!(c.getContext('webgl2') || c.getContext('webgl'))) window.__fallback('no-webgl'); } catch { window.__fallback('no-webgl'); }
+})();
+</script>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>

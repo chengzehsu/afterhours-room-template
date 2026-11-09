@@ -1,0 +1,81 @@
+# Spectra app data
+.spectra/
+
+# Spotify MCP（含權杖與本機 Node）
+tools/node26
+tools/spotify-mcp-server/node_modules/
+tools/spotify-mcp-server/spotify-config.json*
+
+# TMDB 金鑰
+tools/tmdb-config.json
+data/tmdb-cache.json
+
+# 個人原始資料（Spotify 回應含 email、account_id；Netflix 觀看紀錄）
+data/raw/
+
+# 依賴與建置產物
+node_modules
+web/dist/
+web/.wrangler/
+__pycache__/
+*.pyc
+.DS_Store
+
+# 工具寫進 public/ 的日誌（gstack 瀏覽器、Claude）
+web/public/.gstack/
+web/public/.claude/
+.claude/settings.local.json
+
+# Claude Code personal config (not shared with team)
+CLAUDE.local.md
+.sd0x/
+.claude/scripts/
+
+# 驗收與測試的產物（截圖、輸出、舊版渲染）；驗收腳本 web/.aside/*.js 照樣收
+web/.aside/out/
+web/.aside/shots/
+web/.aside/seq*/
+web/.aside/sheets/
+web/.room-test/
+web/.taste-skill/
+
+# 只讀授權腳本輸出的 refresh token（設完 GitHub secret 就刪）
+web/.spotify-readonly-token.json
+web/.spotify-rotated-token
+
+# 導覽影片（video/tour）：逐格拍攝的畫面、剪好的素材、hyperframes 暫存與渲染輸出都很大，不進版本控制
+video/tour/footage/
+video/tour/assets/*.mp4
+video/tour/.hyperframes/
+video/tour/renders/
+video/tour/assets/fonts/NotoSansTC-wght.ttf
+
+# 烘焙前的備份（web/blender/rebake.sh 產生）
+web/blender/.backup-*/
+
+# ── 公開版 ──────────────────────────────────────────────
+# 第三方圖片由資料管線下載，不進版本控制；範例圖（sample-*）例外
+web/public/media/*
+!web/public/media/sample-*
+web/public/screening/media/*
+!web/public/screening/media/sample-*
+# Netflix 衍生資料（每部作品的觀看天數與日期）、分類規則、TMDB 快取：都是個人資料
+data/*.json
+# Spotify 換發的 refresh token（不管放在哪一層）
+**/.spotify-rotated-token
+# Blender 原始素材：用 web/blender/fetch_assets.py、prototypes/screening-room/blender/fetch_assets.py 下載
+web/blender/assets/
+prototypes/screening-room/blender/assets/
+web/public/gigs/*
+!web/public/gigs/3ak2Vfuyntea0dP8EXUCdj.jpg
+!web/public/gigs/4OcaRvSxNASdHv7jnnCX2B.jpg
+!web/public/gigs/4cNtcA8xhtmgJIg5DCHhAn.jpg
+!web/public/gigs/50a3oz71Wye4d5NJjyZOFu.jpg
+!web/public/gigs/GCVO0pJHYN8Mw0XN4IlMmI.jpg
+!web/public/gigs/JwmQPdXv2tMQtKZw2DRdfQ.jpg
+!web/public/gigs/ULYRSbsIUeHqNJYYYAahjd.jpg
+!web/public/gigs/UhlIVSExaCGfxznnfYf0ns.jpg
+!web/public/gigs/WGEorN4jYtYScSlUJoPG4h.jpg
+!web/public/gigs/XpW8hTSd2O4TAiTHKBdmIe.jpg
+!web/public/gigs/gWSE6JqBjv8BA5dxvwSPWv.jpg
+!web/public/gigs/lJ4jYOFUeoyhB2t7YjYh3z.jpg

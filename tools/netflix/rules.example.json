@@ -1,0 +1,27 @@
+{
+ "_說明": "複製成 data/netflix-rules.json 再改成你自己的。片名要跟 Netflix CSV 的 Title 欄位第一段（第一個「: 」之前）一字不差。",
+ "date_format": "%m/%d/%y",
+ "exclude": [
+  "家人在看、不算我的劇"
+ ],
+ "kids": [
+  "小朋友看的卡通"
+ ],
+ "anime_series": [
+  "要算成動畫的影集"
+ ],
+ "anime_movies": [
+  "要算成動畫的電影"
+ ],
+ "movie_with_colon": [
+  "片名本身有「: 」但其實是電影"
+ ],
+ "split": [
+  {
+   "title": "同名作品",
+   "marker": "集名裡才有的字",
+   "match": "同名作品（動畫）",
+   "other": "同名作品（真人）"
+  }
+ ]
+}

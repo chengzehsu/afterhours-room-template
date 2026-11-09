@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "your-room", // 實際用 site.config.json 的 worker（vite.config.ts 帶進建置產物）
+  "compatibility_date": "2026-11-03",
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

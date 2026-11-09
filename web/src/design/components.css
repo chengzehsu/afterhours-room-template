@@ -1,0 +1,53 @@
+/* 播放室元件。只用 tokens.css 的變數。說明見 DESIGN.md「元件」。 */
+
+/* ---------- 按鈕 .btn ----------
+   主要（primary）：一個畫面最多一顆，填強調色
+   次要（secondary）：面色底
+   開關（[aria-pressed]）：次要按鈕的樣式，按下時變骨白底 */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: var(--control-h); padding: 0 var(--space-5);
+  border: 0; border-radius: var(--radius); cursor: pointer; text-decoration: none;
+  font: inherit; font-size: var(--step-body); font-weight: 500; line-height: 1.2;
+  background: var(--surface); color: var(--ink);
+  transition: background-color var(--t-hover) ease, color var(--t-hover) ease, transform var(--t-press) var(--ease-out);
+}
+.btn--primary { background: var(--accent); color: var(--accent-ink); }
+.btn--sm { min-height: var(--control-h-sm); padding: 0 var(--space-4); font-size: var(--step-small); }
+.btn[aria-pressed='true'] { background: var(--ink); color: var(--bg); }
+.btn:active { transform: scale(0.97); }
+.btn:focus-visible { outline: var(--focus); outline-offset: 3px; }
+.btn:disabled, .btn[aria-disabled='true'] { opacity: var(--dim); cursor: not-allowed; transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(:disabled):hover { background: var(--ink); color: var(--bg); }
+  .btn--primary:not(:disabled):hover { background: var(--ink); color: var(--bg); }
+  .btn[aria-pressed='true']:hover { background: var(--accent); color: var(--accent-ink); }
+}
+
+/* ---------- 分段切換 .seg ----------
+   一組互斥選項（role="radiogroup" + role="radio"），選中的那顆填骨白
+   用在：時間範圍、房間時段、現場燈光 */
+.seg { display: inline-flex; flex-wrap: wrap; }
+.seg__opt {
+  min-height: var(--control-h-sm); padding: 0 var(--space-4);
+  border: 0; border-radius: var(--radius); cursor: pointer;
+  font: inherit; font-size: var(--step-small); font-weight: 500;
+  background: var(--surface); color: var(--ink);
+  transition: background-color var(--t-hover) ease, color var(--t-hover) ease, transform var(--t-press) var(--ease-out);
+}
+.seg__opt[aria-checked='true'] { background: var(--ink); color: var(--bg); }
+.seg__opt:active { transform: scale(0.97); }
+.seg__opt:focus-visible { outline: var(--focus); outline-offset: 2px; position: relative; z-index: 1; }
+.seg--fill { display: flex; }
+.seg--fill .seg__opt { flex: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .seg__opt:not([aria-checked='true']):hover { background: var(--accent); color: var(--accent-ink); }
+}
+
+/* ---------- 3D 上的字 ----------
+   不在每段字後面墊方塊（像貼紙）。改成定點畫面的上緣、下緣各一層由深到透明的暗部，
+   字只放在這兩條暗部裡，像電影片頭字幕（暗部寫在 styles.css 的 .moment）。.on-scene 標記「這段字疊在 3D 上」。 */
+.on-scene { color: var(--ink); }
+
+/* ---------- 次要說明文字 .note ---------- */
+.note { font-size: var(--step-small); color: var(--muted); }

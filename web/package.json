@@ -1,0 +1,40 @@
+{
+  "name": "taste-room",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "data:fetch": "node scripts/fetch-spotify.ts",
+    "data:build": "node scripts/build-profile.ts",
+    "data:gigs": "NODE_USE_ENV_PROXY=1 node scripts/fetch-gig-photos.ts",
+    "data:chorus": "NODE_USE_ENV_PROXY=1 node scripts/fetch-chorus.ts",
+    "data": "npm run data:fetch && npm run data:build && npm run data:chorus",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "npm run build && wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts",
+    "deploy": "npm run build && wrangler deploy",
+    "data:sample": "node scripts/make-sample-data.ts",
+    "setup": "node scripts/setup.ts",
+    "doctor": "node scripts/doctor.ts",
+    "spotify:login": "NODE_USE_ENV_PROXY=1 node scripts/authorize-spotify-readonly.ts",
+    "audit:mobile": "node scripts/mobile-audit.mjs",
+    "audit:rwd": "AUDIT_PRESET=rwd node scripts/mobile-audit.mjs",
+    "check:opening-hover": "node scripts/opening-hover-check.mjs",
+    "gate": "zsh scripts/release-gate.sh",
+    "audit:mobile-perf": "node scripts/mobile-perf.mjs",
+    "audit:brightness": "node scripts/brightness-audit.mjs"
+  },
+  "dependencies": {
+    "three": "^0.181.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.67.0",
+    "@types/node": "^24.10.1",
+    "@types/three": "^0.181.0",
+    "sharp": "^0.35.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2",
+    "wrangler": "^4.157.0"
+  }
+}

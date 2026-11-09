@@ -1,0 +1,70 @@
+{
+  "name": "阿明",
+  "alias": "Ming",
+  "share": {
+    "posterSwap": {}
+  },
+  "favorites": {
+    "screen": [
+      "小鎮氣象台",
+      "第二人生說明書",
+      "隔壁班的天才",
+      "週末限定的家",
+      "夜行動物園",
+      "失眠者互助會",
+      "備用鑰匙",
+      "屋頂上的樂團",
+      "星屑旅行社"
+    ],
+    "gigs": [
+      {
+        "name": "小滿樂團",
+        "spotify": "gWSE6JqBjv8BA5dxvwSPWv"
+      },
+      {
+        "name": "知夏",
+        "spotify": "GCVO0pJHYN8Mw0XN4IlMmI"
+      },
+      {
+        "name": "月台上的人",
+        "spotify": "ULYRSbsIUeHqNJYYYAahjd"
+      },
+      {
+        "name": "雲端早餐",
+        "spotify": "UhlIVSExaCGfxznnfYf0ns"
+      },
+      {
+        "name": "山下合唱團",
+        "spotify": "3ak2Vfuyntea0dP8EXUCdj"
+      },
+      {
+        "name": "晚風合唱團",
+        "spotify": "JwmQPdXv2tMQtKZw2DRdfQ"
+      },
+      {
+        "name": "Fern & Ash",
+        "spotify": "50a3oz71Wye4d5NJjyZOFu"
+      },
+      {
+        "name": "屋頂上的電台",
+        "spotify": "XpW8hTSd2O4TAiTHKBdmIe"
+      },
+      {
+        "name": "橘子日曆",
+        "spotify": "4OcaRvSxNASdHv7jnnCX2B"
+      },
+      {
+        "name": "Moonwake",
+        "spotify": "4cNtcA8xhtmgJIg5DCHhAn"
+      },
+      {
+        "name": "貓步",
+        "spotify": "lJ4jYOFUeoyhB2t7YjYh3z"
+      },
+      {
+        "name": "Pale Ferry",
+        "spotify": "WGEorN4jYtYScSlUJoPG4h"
+      }
+    ]
+  }
+}

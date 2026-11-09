@@ -1,0 +1,36 @@
+# 公開快照要拿掉的路徑（相對 repo 根目錄，支援 shell glob）。一行一個，# 開頭是註解。
+# 個人資料：換成 web/scripts/make-sample-data.ts 產生的假資料
+data/*.json
+web/src/data/*.json
+web/public/screening/story.js
+# 第三方圖片（Spotify 封面、歌手照、TMDB 海報）：由資料管線下載，不重新散布
+web/public/media
+web/public/screening/media
+web/public/gigs
+# 含業主名字或封面截圖的設計稿、原型、驗收腳本與筆記
+web/public/variants
+web/public/room-preview
+web/variants-src
+web/.aside
+web/docs
+prototypes
+# 業主自己的 AI 工具設定、規格與開發紀錄
+AGENTS.md
+CLAUDE.md
+.claude
+.mcp.json
+.spectra.yaml
+.taste-skill
+docs
+intent
+video
+# 第三方 Spotify MCP 伺服器（業主本機用；公開版走環境變數的只讀權杖）
+tools/spotify-mcp-server
+# 私人的額外禁用字串清單
+scripts/public/forbidden.txt
+# Switzer 字型（Fontshare）：repo 裡沒有授權檔，不重新散布；README 說明怎麼自己下載，沒有字型時退回系統字型
+web/public/fonts/switzer-*.woff2
+# Blender 原始素材（Poly Haven CC0，約 90MB）：只有重做 3D 房間才用到，由 fetch_assets.py 下載，不放進 repo
+web/blender/assets
+# 舊版建模腳本，已經沒有地方用到
+web/blender/build_room_v1.py

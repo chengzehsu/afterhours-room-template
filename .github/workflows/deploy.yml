@@ -1,0 +1,133 @@
+# 播放室：每次 push／PR 跑型別、測試、建置；main 分支通過後部署到 Cloudflare Workers（your-room）
+# 每週一 00:00（台灣）自動重抓 Spotify 資料再部署；push 與手動觸發也先抓資料，PR 不抓、用 repo 裡的資料。
+# 需要的 GitHub secret：
+#   CLOUDFLARE_API_TOKEN（Cloudflare「Edit Cloudflare Workers」範本建的權杖）
+#   SPOTIFY_CLIENT_ID、SPOTIFY_CLIENT_SECRET、SPOTIFY_REFRESH_TOKEN（web/scripts/authorize-spotify-readonly.ts 授權的只讀權杖）
+#   SECRETS_PAT（fine-grained 權杖，只開這個 repo 的 Secrets: read and write；Spotify 輪替 refresh token 時寫回用）
+# 帳號 ID 寫在 web/wrangler.jsonc 的 account_id，不是機密
+name: 檢查與部署
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 16 * * 0' # UTC 週日 16:00 ＝ 台灣週一 00:00
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # clone 下來還沒設 secret 時，跳過抓資料與部署，只跑檢查與建置（不會每次都亮紅燈）
+    env:
+      HAS_SPOTIFY: ${{ secrets.SPOTIFY_REFRESH_TOKEN != '' }}
+      HAS_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+
+      # 網址只寫在 web/site.config.json：建置（分享標籤）讀它，部署後檢查也讀它
+      - name: 讀網站設定
+        run: |
+          echo "SITE=$(node -p "require('./site.config.json').url")" >> "$GITHUB_ENV"
+          [ "$HAS_SPOTIFY" = true ] || echo "::notice::還沒設 SPOTIFY_* secret：跳過抓 Spotify 資料，用 repo 裡的資料建置（README 9.1）"
+          [ "$HAS_CLOUDFLARE" = true ] || echo "::notice::還沒設 CLOUDFLARE_API_TOKEN secret：只建置、不部署（README 9.1）"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26 # 跟本機 tools/node26 同一版號系列；測試直接跑 .ts 要 Node 23.6 以上
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # 分享圖在建置時用 sharp 畫，要有中文字型（本機是蘋方，線上是思源黑體）；沒裝字型中文會變方框
+      - name: 安裝中文字型
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk && fc-cache -f
+
+      - run: npm ci
+
+      # 抓最新 Spotify 資料（PR 不抓）。只有這一步看得到 Spotify 憑證。
+      # push 失敗：警告並用 repo 裡的資料；schedule／手動觸發失敗：整個 job 失敗、不部署
+      - name: 抓 Spotify 資料
+        id: fetch
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && env.HAS_SPOTIFY == 'true'
+        continue-on-error: ${{ github.event_name == 'push' }}
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          SPOTIFY_ROTATED_TOKEN_FILE: ${{ runner.temp }}/spotify-rotated-token
+        run: |
+          for v in SPOTIFY_CLIENT_ID SPOTIFY_CLIENT_SECRET SPOTIFY_REFRESH_TOKEN; do
+            if [ -z "${!v}" ]; then echo "::error::GitHub secret $v 沒設，不能抓 Spotify 資料"; exit 1; fi
+          done
+          npm run data:fetch
+
+      # Spotify 換發時可能回新的 refresh token（舊的可能失效）：fetch 成不成功都要寫回，寫回失敗要讓 job 失敗
+      - name: 輪替的 refresh token 寫回 secret
+        if: always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && env.HAS_SPOTIFY == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SECRETS_PAT }}
+          ROTATED: ${{ runner.temp }}/spotify-rotated-token
+        run: |
+          if [ ! -s "$ROTATED" ]; then echo "這次沒有輪替 refresh token"; exit 0; fi
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Spotify 輪替了 refresh token，但沒設 SECRETS_PAT，新 token 沒存下來；請重新跑 authorize-spotify-readonly.ts 並更新 SPOTIFY_REFRESH_TOKEN"
+            exit 1
+          fi
+          if ! gh secret set SPOTIFY_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY" < "$ROTATED"; then
+            echo "::error::寫回 SPOTIFY_REFRESH_TOKEN 失敗（SECRETS_PAT 過期或權限不是 Secrets: read and write？）。舊 token 可能已失效，請重新跑 authorize-spotify-readonly.ts 並手動更新 secret"
+            exit 1
+          fi
+          rm -f "$ROTATED"
+          echo "已把輪替後的 refresh token 寫回 secret"
+
+      # 這兩步不需要 Spotify 憑證，所以不給 env
+      - name: 建 profile 與副歌
+        id: refresh
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.fetch.outcome == 'success'
+        continue-on-error: ${{ github.event_name == 'push' }}
+        run: |
+          npm run data:build
+          npm run data:chorus
+
+      - name: 抓資料失敗，改用 repo 裡的資料（只有 push 會走到這裡）
+        if: steps.fetch.outcome == 'failure' || steps.refresh.outcome == 'failure'
+        run: |
+          echo "::warning::更新 Spotify 資料失敗，這次部署用 repo 裡已提交的資料"
+          git checkout -- src/data
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx vite build
+
+      # 工具寫進 public/ 的點目錄（.gstack、.claude）不能公開：dropDotDirs() 應該已經刪掉，這裡再擋一次
+      - name: 確認 dist 沒有點目錄
+        run: |
+          leaked=$(find dist -mindepth 1 -type d -name '.*')
+          if [ -n "$leaked" ]; then echo "dist 裡有點目錄，不部署：$leaked"; exit 1; fi
+
+      - name: 部署到 Cloudflare Workers
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && env.HAS_CLOUDFLARE == 'true'
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # 隱藏檔路徑要回首頁（SPA 退路），不能回日誌內容
+      - name: 部署後檢查
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && env.HAS_CLOUDFLARE == 'true'
+        run: |
+          for p in / /.gstack/browse-console.log /.claude/x; do
+            body=$(curl -fsS --retry 3 "$SITE$p")
+            echo "$body" | grep -q 'id="room-data"' || { echo "$p 回的不是播放室首頁"; exit 1; }
+          done
+          echo "首頁正常，隱藏檔路徑都回首頁"

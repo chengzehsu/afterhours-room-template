@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8">
+    <!-- 第一次繪製前就標記「有 JavaScript」：沒有 JS 時 CSS 改顯示 HTML 版 CD 牆、藏起只有 JS 能用的按鈕 -->
+    <script>document.documentElement.classList.add('js')</script>
+    <!-- 從放映室回來：第一次繪製前就蓋暗場（條件同 src/core/opening.ts 的 entryRoute）。
+         styles.css 跟 main.ts 都要等 JS 才到（開發時 CSS 由 JS 注入），不先蓋會閃出沒樣式的頁面。
+         main.ts 房間畫好（或失敗）後加 is-returning-go 淡入；8 秒保險，JS 沒來也會顯示。 -->
+    <script>if (new URLSearchParams(location.search).get('from') === 'screening' && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('is-returning')</script>
+    <style>
+      html.is-returning:not(.is-returning-go) { background: #1a120d; }
+      html.is-returning:not(.is-returning-go) body { visibility: hidden; animation: return-failsafe 0s 8s forwards; }
+      @keyframes return-failsafe { to { visibility: visible; } }
+      /* 一般進場也一樣：開發模式的 CSS 要等 main.ts 整串模組載完才由 JS 注入，之前會先畫出沒樣式的白底頁面。
+         CSS 到之前先蓋深色底，main.ts 一跑（CSS 已注入）就加 css-ready 拿掉；8 秒保險，JS 沒來也會顯示 */
+      html.js:not(.css-ready) { background: #1a120d; }
+      html.js:not(.css-ready) body { visibility: hidden; animation: return-failsafe 0s 8s forwards; }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><!--title--></title>
+    <meta name="description" content="<!--description-->">
+    <meta name="theme-color" content="#2b2216">
+    <link rel="preload" href="fonts/switzer-600.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <!--page-->
+    <!--room-data-->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

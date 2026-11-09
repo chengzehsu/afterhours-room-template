@@ -1,0 +1,14 @@
+
+# ── 公開版 ──────────────────────────────────────────────
+# 第三方圖片由資料管線下載，不進版本控制；範例圖（sample-*）例外
+web/public/media/*
+!web/public/media/sample-*
+web/public/screening/media/*
+!web/public/screening/media/sample-*
+# Netflix 衍生資料（每部作品的觀看天數與日期）、分類規則、TMDB 快取：都是個人資料
+data/*.json
+# Spotify 換發的 refresh token（不管放在哪一層）
+**/.spotify-rotated-token
+# Blender 原始素材：用 web/blender/fetch_assets.py、prototypes/screening-room/blender/fetch_assets.py 下載
+web/blender/assets/
+prototypes/screening-room/blender/assets/

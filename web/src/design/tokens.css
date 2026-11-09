@@ -1,0 +1,63 @@
+/* 播放室設計系統：所有顏色、字級、間距、動態只在這裡定義，其他地方一律引用變數。說明見 DESIGN.md。 */
+:root {
+  /* 顏色：一種底、一種字、一種強調 */
+  --bg: #2b2216;          /* 胡桃木底 */
+  --surface: #382d1e;     /* 高一階的面，用色階分層，不用線和陰影 */
+  --ink: #e4e2da;         /* 骨白字，內文一律用它 */
+  --muted: #a39a8b;       /* 只給次要資訊：名次、註記 */
+  --accent: #bda38b;      /* 棕褐：主要按鈕、選中狀態 */
+  --accent-ink: #2b2216;
+  --field-1: #bda38b;     /* 整區換色用（「一直都在」） */
+  --field-1-ink: #1c150d;
+
+  /* 字體：Switzer 負責英數，Noto Sans TC 負責中文 */
+  --font: 'Switzer', 'Noto Sans TC', 'PingFang TC', 'Heiti TC', system-ui, sans-serif;
+
+  /* 字級：全站只有這 5 級 */
+  --step-small: clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem);   /* 13–14px 註記、名次 */
+  --step-body: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);     /* 17–19px 內文 */
+  --step-lead: clamp(1.1875rem, 1.05rem + 0.5vw, 1.5rem);      /* 19–24px 引言、排行表 */
+  --step-head: clamp(1.75rem, 1.2rem + 2.2vw, 3.25rem);        /* 28–52px 區塊標題 */
+  --step-display: clamp(3rem, 0.8rem + 6.2vw, 6.75rem);        /* 48–108px 門口名字、大數字、唱盤標題 */
+
+  /* 間距：9 級，元件內外距一律從這裡取 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+  --space-9: 96px;
+  --margin: clamp(16px, 2vw, 28px);   /* 頁面左右邊界 */
+  --gutter: clamp(16px, 2vw, 28px);   /* 欄距 */
+  --section: clamp(112px, 12vw, 176px); /* 區塊之間 */
+
+  /* 控制項 */
+  --control-h: 48px;     /* 主要按鈕 */
+  --control-h-sm: 44px;  /* 次要按鈕、分段切換（觸控最小 44px） */
+  --radius: 0;           /* 全站方角 */
+  --focus: 3px solid var(--accent);
+
+  /* 狀態 */
+  --dim: 0.45;           /* 其他列變淡的程度，不低於 0.4 */
+  --scrim-strong: color-mix(in srgb, #120d07 82%, transparent); /* 定點畫面上下緣的暗部：字放在最深的那一段 */
+
+  /* 層級 */
+  --z-scene: 0;
+  --z-content: 1;
+  --z-overlay: 2;
+  --z-sticky: 3;
+  --z-skip: 10;
+  --z-veil: 30;          /* 換頁暗場：蓋過頂列（20）與播放列（15） */
+
+  /* 動態 */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+  --t-press: 140ms;
+  --t-hover: 180ms;
+  --t-ui: 240ms;
+  --stagger-item: 70ms;
+}

@@ -1,0 +1,8 @@
+# 上面排除的資料夾裡，仍要放回公開快照的檔案（放映室資料管線）
+prototypes/screening-room/home/build_story.py
+# 放映室的 Blender 建模與烘焙腳本（Poly Haven 素材不收，用 fetch_assets.py 下載）
+prototypes/screening-room/blender/build_props.py
+prototypes/screening-room/blender/build_screening.py
+prototypes/screening-room/blender/compare_baked.py
+prototypes/screening-room/blender/fetch_assets.py
+prototypes/screening-room/blender/measure.py
